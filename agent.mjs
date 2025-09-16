@@ -17,7 +17,7 @@ import {
  * @param {string} sessionId - An arbitrary identifier for the session.
  */
 export const invokeBedrockAgent = async (prompt, sessionId) => {
-  const client = new BedrockAgentRuntimeClient({ region: "us-east-1" });
+  const client = new BedrockAgentRuntimeClient({ region: "eu-west-2" });
   // const client = new BedrockAgentRuntimeClient({
   //   region: "us-east-1",
   //   credentials: {
@@ -27,10 +27,11 @@ export const invokeBedrockAgent = async (prompt, sessionId) => {
   // });
 
   const agentId = "LJ5G28BRXC";
-  const agentAliasId = "AVKP1ITZAA";
+  const agentAliasId = "TVIM2N5M7H";
 
   const command = new InvokeAgentCommand({
     agentId,
+    agentAliasId,
     sessionId,
     inputText: prompt,
   });
@@ -45,7 +46,7 @@ export const invokeBedrockAgent = async (prompt, sessionId) => {
 
     for await (const chunkEvent of response.completion) {
       const chunk = chunkEvent.chunk;
-      console.log(chunk);
+      // console.log(chunk);
       const decodedResponse = new TextDecoder("utf-8").decode(chunk.bytes);
       completion += decodedResponse;
     }
@@ -56,9 +57,5 @@ export const invokeBedrockAgent = async (prompt, sessionId) => {
   }
 };
 
-// Call function if run directly
-import { fileURLToPath } from "node:url";
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const result = await invokeBedrockAgent("I need help.", "123");
-  console.log(result);
-}
+// const result = await invokeBedrockAgent("I need help about ISA.", "123sadasd");
+// console.log(result.completion);

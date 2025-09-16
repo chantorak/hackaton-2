@@ -1,0 +1,46 @@
+[
+    {
+        "id": "comfort_experience",
+        "question": "How do you feel when people start talking about investing and finance?",
+        "type": "multiple-choice",
+        "options": [
+            "Honestly? A bit overwhelmed - there's so much jargon!",
+            "Curious but not sure where to start",
+            "I understand some basics but want to learn more",
+            "Pretty comfortable - I just want to get better at it",
+            "It depends on my mood and how it's explained"
+        ],
+        "tone": "understanding",
+        "purpose": "Normalize feeling confused/overwhelmed about finance"
+    },
+    {
+        "id": "comfort_goals",
+        "question": "What's one thing you're hoping to achieve in the next few years that's important to you?",
+        "type": "multiple-choice",
+        "options": [
+            "Travel somewhere I've always wanted to go",
+            "Buy my first home or move to a better one",
+            "Feel more secure about my future",
+            "Support my family better",
+            "Have more freedom to choose how I spend my time",
+            "Something else entirely"
+        ],
+        "tone": "warm",
+        "purpose": "Connect investing to personal dreams, not just numbers"
+    },
+    {
+        "id": "comfort_learning",
+        "question": "When you're trying to understand something new, what works best for you?",
+        "type": "multiple-choice",
+        "options": [
+            "Show me examples and let me see how it works",
+            "Explain it step-by-step with clear reasoning",
+            "Let me try it myself with guidance",
+            "Tell me stories about how others have done it",
+            "Give me the big picture first, then the details",
+            "I learn differently depending on the topic"
+        ],
+        "tone": "collaborative",
+        "purpose": "Understand learning style while feeling heard"
+    }
+]
