@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Get Started — Vanguard</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    body{max-width:900px;margin:40px auto;padding:24px;background:#f7fafc;color:#0f172a;border-radius:12px}
+    h1{margin:0 0 18px;font-size:22px}
+    .question{background:#fff;padding:14px;border-radius:10px;box-shadow:0 1px 4px rgba(2,6,23,.06);margin-bottom:12px}
+    .question h3{margin:0 0 8px;font-size:16px}
+    .options{display:flex;flex-wrap:wrap;gap:8px}
+    .option{padding:8px 12px;border-radius:999px;border:1px solid #e6edf3;background:#f1f5f9;cursor:pointer}
+    .option.selected{background:#0ea5a4;color:#fff;border-color:#0ea5a4}
+    .actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
+    button{background:#0ea5a4;color:#fff;border:none;padding:10px 16px;border-radius:8px;cursor:pointer}
+    button[disabled]{opacity:.5;cursor:not-allowed}
+    .small{font-size:13px;color:#475569}
+  </style>
+</head>
+<body>
+  <h1>Quick questions to tailor your experience</h1>
+  <div id="questionsRoot"></div>
+
+  <div class="actions">
+    <div class="small">Your choices will be used to personalise the session.</div>
+    <div>
+      <button id="clearBtn" type="button">Clear</button>
+      <button id="startBtn" type="button" disabled>Start</button>
+    </div>
+  </div>
+
+  <script>
+    // Load questions from the local JSON file and render them.
+    const root = document.getElementById('questionsRoot');
+    const startBtn = document.getElementById('startBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    let questions = [];
+    const answers = {}; // id -> answer (string)
+
+    async function loadQuestions() {
+      const resp = await fetch('questions.json');
+      questions = await resp.json();
+      render();
+    }
+
+    function render() {
+      root.innerHTML = '';
+      questions.forEach(q => {
+        const card = document.createElement('div');
+        card.className = 'question';
+        const title = document.createElement('h3');
+        title.textContent = q.question;
+        card.appendChild(title);
+
+        const opts = document.createElement('div');
+        opts.className = 'options';
+
+        if (q.type === 'multiple-choice') {
+          q.options.forEach(opt => {
+            const el = document.createElement('button');
+            el.type = 'button';
+            el.className = 'option';
+            el.textContent = opt;
+            el.addEventListener('click', () => {
+              answers[q.id] = opt;
+              // toggle selected class for this question
+              Array.from(opts.children).forEach(c => c.classList.remove('selected'));
+              el.classList.add('selected');
+              refreshStartState();
+            });
+            opts.appendChild(el);
+          });
+        } else {
+          // fallback: textarea
+          const ta = document.createElement('textarea');
+          ta.rows = 3; ta.style.width = '100%';
+          ta.addEventListener('input', () => {
+            answers[q.id] = ta.value;
+            refreshStartState();
+          });
+          opts.appendChild(ta);
+        }
+
+        card.appendChild(opts);
+        root.appendChild(card);
+      });
+    }
+
+    function refreshStartState() {
+      // enable start when at least one answer exists
+      const any = Object.keys(answers).length > 0;
+      startBtn.disabled = !any;
+    }
+
+    startBtn.addEventListener('click', () => {
+      // persist answers and redirect to ui.html
+      sessionStorage.setItem('vanguard_answers', JSON.stringify(answers));
+      window.location.href = './ui.html';
+    });
+
+    clearBtn.addEventListener('click', () => {
+      sessionStorage.removeItem('vanguard_answers');
+      location.reload();
+    });
+
+    loadQuestions().catch(err => {
+      root.innerHTML = '<div style="color:#b91c1c">Failed to load questions.json</div>';
+      console.error(err);
+    });
+  </script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import express from 'express';
 import { invokeBedrockAgent } from './agent.mjs';
+import { invokeOpenAIAgent } from './openai.mjs';
 const app = express();
 const port = 3000;
 
@@ -29,6 +30,19 @@ app.post('/', async (req, res) => {
   } catch (err) {
     console.error('Error in / handler:', err);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST /openai - forward request to OpenAI Chat Completions and return { reply }
+app.post('/openai', async (req, res) => {
+  try {
+    const { msg, sessionId } = req.body || {};
+    const result = await invokeOpenAIAgent(msg, sessionId);
+    return res.json({ reply: result.reply });
+  } catch (err) {
+    console.error('Error in /openai handler:', err);
+    const body = err?.body || err?.message || 'Internal server error';
+    return res.status(500).json({ error: 'OpenAI agent error', details: String(body) });
   }
 });
 

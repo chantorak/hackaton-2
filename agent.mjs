@@ -1,3 +1,85 @@
+import fetch from 'node-fetch';
+
+// You could also load these instructions from a DB
+export const agentConfig = {
+  name: 'ChatAgent',
+  instructions: 'You are caring financial educator, always do a some chatting then come up with a multi choice question for what to discuss next related to financial knowledge, all you answers are in JSON format {answer: "", "question": {"question": "", "choices": []}}',
+  model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo'
+};
+
+// Create an agent. If the official @openai/agents package is available use it,
+// otherwise fall back to a lightweight in-process shim that implements a
+// simple run(msg, sessionId) method and keeps per-session context in memory.
+export async function createAgent() {
+  // Try to load the official agents package
+  try {
+    const mod = await import('@openai/agents');
+    const RealAgent = mod.Agent || (mod.default && mod.default.Agent);
+    if (RealAgent) {
+      const real = new RealAgent(agentConfig);
+      // If the real agent exposes a runnable method, wrap and return it.
+      if (typeof real.run === 'function' || typeof real.call === 'function' || typeof real.invoke === 'function' || typeof real === 'function') {
+        return {
+          run: async (msg, sessionId) => {
+            if (typeof real.run === 'function') return real.run(msg, { sessionId });
+            if (typeof real.call === 'function') return real.call(msg, { sessionId });
+            if (typeof real.invoke === 'function') return real.invoke(msg, { sessionId });
+            if (typeof real === 'function') return real(msg, { sessionId });
+            // defensive fallback - should not reach here
+            throw new Error('Loaded agent does not expose an execution method');
+          }
+        };
+      } else {
+        // If the loaded agent doesn't expose a usable run method, warn and fall back to the shim.
+        console.warn('Loaded @openai/agents but agent instance has no runnable method; falling back to local shim.');
+      }
+    }
+  } catch (e) {
+    // Ignore - fallback to shim
+  }
+
+  // Shim implementation
+  const sessionStore = new Map();
+
+  function getSession(sessionId) {
+    if (!sessionId) sessionId = 'anon';
+    if (!sessionStore.has(sessionId)) {
+      sessionStore.set(sessionId, [
+        { role: 'system', content: agentConfig.instructions }
+      ]);
+    }
+    return sessionStore.get(sessionId);
+  }
+
+  async function callOpenAI(messages) {
+    const key = process.env.OPENAI_API_KEY;
+    if (!key) throw new Error('OPENAI_API_KEY not configured');
+    const payload = { model: agentConfig.model, messages, max_tokens: 500 };
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) {
+      const txt = await r.text();
+      const err = new Error(`OpenAI API error ${r.status}: ${txt}`);
+      err.status = r.status; err.body = txt; throw err;
+    }
+    return r.json();
+  }
+
+  return {
+    run: async (msg, sessionId) => {
+      const messages = getSession(sessionId);
+      const content = (typeof msg === 'string') ? msg : (typeof msg === 'object' ? Object.entries(msg).map(([k,v]) => `- ${k}: ${v}`).join('\n') : String(msg));
+      messages.push({ role: 'user', content });
+      const j = await callOpenAI(messages);
+      const reply = j.choices?.[0]?.message?.content ?? '';
+      messages.push({ role: 'assistant', content: reply });
+      return { reply, raw: j };
+    }
+  };
+}
 
 import {
   BedrockAgentRuntimeClient,

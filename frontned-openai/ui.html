@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vanguard — Trainer</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;background:#f8fafc;color:#0f172a;padding:28px}
+    .container{max-width:880px;margin:0 auto;background:#fff;padding:22px;border-radius:12px;box-shadow:0 6px 20px rgba(2,6,23,.06)}
+    h1{margin:0 0 12px}
+    h2.reply{background:#eef2ff;padding:12px;border-radius:8px}
+    .answers{margin:14px 0;padding:12px;background:#f1f5f9;border-radius:8px}
+    .answers div{margin-bottom:6px}
+    form{display:flex;flex-direction:column;gap:8px}
+    textarea{min-height:100px;padding:10px;border-radius:8px;border:1px solid #e6edf3}
+    button{align-self:flex-start;background:#0ea5a4;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Trainer</h1>
+    <div id="replyControls" style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+      <div style="font-weight:600">Response:</div>
+      <button id="viewPlain" type="button">Plain</button>
+      <button id="viewMarkdown" type="button">Markdown</button>
+    </div>
+
+    <div id="replyContainer" class="reply" style="min-height:48px;padding:12px;white-space:pre-wrap"></div>
+
+    <div class="answers" id="answersBox">
+      <strong>Your answers</strong>
+      <div id="answersList">(no answers yet)</div>
+    </div>
+
+    <form id="llmForm">
+      <label for="userInput">Ask anything (or refine):</label>
+      <textarea id="userInput" placeholder="Type your question..."></textarea>
+      <button type="submit">Send</button>
+    </form>
+
+    <div id="response"></div>
+  </div>
+
+  <script>
+    // Read answers from sessionStorage set by landing.html
+    const stored = sessionStorage.getItem('vanguard_answers');
+    const answers = stored ? JSON.parse(stored) : {};
+
+    const answersList = document.getElementById('answersList');
+  const apiReply = document.getElementById('replyContainer');
+  const viewPlain = document.getElementById('viewPlain');
+  const viewMarkdown = document.getElementById('viewMarkdown');
+  let currentView = 'plain';
+
+    function renderAnswers() {
+      if (!stored || Object.keys(answers).length === 0) {
+        answersList.textContent = '(no answers yet)';
+        return;
+      }
+      answersList.innerHTML = '';
+      Object.entries(answers).forEach(([k,v]) => {
+        const d = document.createElement('div');
+        d.textContent = `${k}: ${v}`;
+        answersList.appendChild(d);
+      });
+    }
+
+    renderAnswers();
+
+    async function sendToApi(payload) {
+      try {
+        const res = await fetch('http://localhost:3000/openai', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        return data;
+      } catch (err) {
+        return { error: err.message };
+      }
+    }
+
+    // On load, automatically send the answers to the API and display reply in h2
+    (async () => {
+      if (Object.keys(answers).length === 0) return;
+  apiReply.textContent = 'Thinking...';
+      const payload = { msg: JSON.stringify(answers), sessionId: 'session-from-ui' };
+      const data = await sendToApi(payload);
+  if (data && data.reply) renderReply(data.reply);
+  else if (data && data.error) renderReply('Error: ' + data.error);
+  else renderReply('No reply from server');
+    })();
+
+    // Keep original send form behavior but include answers context
+    document.getElementById('llmForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const input = document.getElementById('userInput').value;
+      apiReply.textContent = 'Thinking...';
+      const payload = { msg: JSON.stringify({ ...answers, freeform: input }), sessionId: 'session-from-ui' };
+      const data = await sendToApi(payload);
+      if (data && data.reply) renderReply(data.reply);
+      else if (data && data.error) renderReply('Error: ' + data.error);
+      else renderReply('No reply from server');
+    });
+
+    // Minimal, safe markdown-ish renderer for headings, bold, italic, code, and lists
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[s]);
+    }
+
+    function mdToHtml(md) {
+      // Escape first
+      let s = escapeHtml(md);
+      // code blocks ```
+      s = s.replace(/```([\s\S]*?)```/g, (m, p1) => '<pre><code>' + escapeHtml(p1) + '</code></pre>');
+      // inline code `x`
+      s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+      // headings
+      s = s.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+      s = s.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+      s = s.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+      // bold **text**
+      s = s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // italic *text*
+      s = s.replace(/\*(.*?)\*/g, '<em>$1</em>');
+      // unordered lists
+      s = s.replace(/^\s*[-\*+] (.*)$/gm, '<li>$1</li>');
+      s = s.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+      // paragraphs
+      s = s.replace(/^(?!<h|<ul|<pre|<li|<code)(.+)$/gm, '<p>$1</p>');
+      return s;
+    }
+
+    function renderReply(raw) {
+      if (!raw) raw = '';
+      if (currentView === 'markdown') {
+        apiReply.innerHTML = mdToHtml(String(raw));
+      } else {
+        // plain text: preserve newlines
+        apiReply.textContent = String(raw);
+      }
+    }
+
+    viewPlain.addEventListener('click', () => { currentView = 'plain'; renderReply(apiReply.textContent || apiReply.innerText); });
+    viewMarkdown.addEventListener('click', () => { currentView = 'markdown'; renderReply(apiReply.textContent || apiReply.innerText); });
+  </script>
+</body>
+</html>
