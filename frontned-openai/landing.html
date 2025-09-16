@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Get Started — Vanguard</title>
+  <title>Get Started — Vangd</title>
   <style>
     :root{font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
     body{max-width:900px;margin:40px auto;padding:24px;background:#f7fafc;color:#0f172a;border-radius:12px}
@@ -97,12 +97,12 @@
 
     startBtn.addEventListener('click', () => {
       // persist answers and redirect to ui.html
-      sessionStorage.setItem('vanguard_answers', JSON.stringify(answers));
+      sessionStorage.setItem('Vangd_answers', JSON.stringify(answers));
       window.location.href = './ui.html';
     });
 
     clearBtn.addEventListener('click', () => {
-      sessionStorage.removeItem('vanguard_answers');
+      sessionStorage.removeItem('Vangd_answers');
       location.reload();
     });
 
