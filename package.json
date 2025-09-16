@@ -1,0 +1,18 @@
+{
+  "name": "vanguard",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node send_bedrock_test.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-bedrock": "^3.888.0",
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.888.0",
+    "@aws-sdk/client-bedrock-runtime": "^3.888.0",
+    "express": "^5.1.0"
+  }
+}
