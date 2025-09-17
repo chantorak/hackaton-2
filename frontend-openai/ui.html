@@ -13,7 +13,10 @@
     .answers div{margin-bottom:6px}
     form{display:flex;flex-direction:column;gap:8px}
     textarea{min-height:100px;padding:10px;border-radius:8px;border:1px solid #e6edf3}
-    button{align-self:flex-start;background:#0ea5a4;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer}
+  button{align-self:flex-start;background:#0ea5a4;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer}
+  /* Choice buttons should look like neutral selectable chips */
+  .choice-button{align-self:stretch;background:#fff;color:#0f172a;padding:8px 12px;border:1px solid #e6edf3;border-radius:8px;text-align:left;cursor:pointer}
+  .choice-button:hover{background:#f8fafc}
   </style>
 </head>
 <body>
@@ -149,10 +152,7 @@
         const b = document.createElement('button');
         b.type = 'button';
         b.textContent = choice;
-        b.style.padding = '8px 12px';
-        b.style.borderRadius = '8px';
-        b.style.border = '1px solid #e6edf3';
-        b.style.background = '#fff';
+        b.className = 'choice-button';
         b.addEventListener('click', async () => {
           // send the chosen option back to the agent
           apiReply.textContent = 'Thinking...';

@@ -11,7 +11,7 @@ document.getElementById('llmForm').addEventListener('submit', async function(e) 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ msg: input, sessionId: '123sadasd' })
     });
- 
+
     const data = await res.json();
     responseDiv.innerHTML = `<strong>Response:</strong> ${data.reply}`;
   } catch (err) {

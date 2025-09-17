@@ -1,9 +1,23 @@
 import fetch from 'node-fetch';
+import fs from 'fs';
+import path from 'path';
+
+// Load instructions from file if provided. Default file is ./agent_instructions.txt
+const instrFile = process.env.AGENT_INSTRUCTIONS_FILE || path.resolve(process.cwd(), 'agent_instructions.txt');
+let fileInstructions = null;
+try {
+  if (fs.existsSync(instrFile)) {
+    fileInstructions = fs.readFileSync(instrFile, { encoding: 'utf8' }).trim();
+    console.log(`Loaded agent instructions from ${instrFile}`);
+  }
+} catch (e) {
+  console.warn('Could not load agent instructions file:', e.message);
+}
 
 // You could also load these instructions from a DB
 export const agentConfig = {
   name: 'ChatAgent',
-  instructions: 'You are caring financial educator, always do a some chatting then come up with a multi choice question for what to discuss next related to financial knowledge, all you answers are in JSON format {answer: "", "question": {"question": "", "choices": []}}',
+  instructions: fileInstructions || 'You are caring financial educator, always do a some chatting then come up with a multi choice question for what to discuss next related to financial knowledge, all you answers are in JSON format {answer: "", "question": {"question": "", "choices": []}}',
   model: process.env.OPENAI_MODEL || 'gpt-3.5-turbo'
 };
 
